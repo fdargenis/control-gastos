@@ -1,0 +1,18 @@
+# Copias de seguridad
+backup-v1/
+
+# Capturas locales
+capturas/
+
+# Archivos de pruebas temporales
+pruebas.html
+pruebas.js
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Configuraciones locales y secretos
+.env
+.env.*
+!.env.example
