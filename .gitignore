@@ -1,12 +1,5 @@
-# Copias de seguridad
+# Copia de seguridad local (no versionada)
 backup-v1/
-
-# Capturas locales
-capturas/
-
-# Archivos de pruebas temporales
-pruebas.html
-pruebas.js
 
 # Archivos del sistema
 .DS_Store

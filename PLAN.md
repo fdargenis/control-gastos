@@ -7,7 +7,7 @@
 - **Carpeta:** `/home/fdargenis/Documentos/Control de gastos web  app` (ojo: doble espacio)
 - **Copia de la versión original:** `backup-v1/` (HTML, CSS y JS de antes del rediseño)
 - **Fecha de inicio:** 2026-10-25
-- **Estado general:** Entrega C completada (fases 1-7). App lista para usar.
+- **Estado general:** Versión 1 completada y publicada como **Finova** (repo público en GitHub).
 
 ---
 
@@ -289,7 +289,7 @@ libre cuando la lista de movimientos es larga. La rejilla no cambia de áreas.
 - [x] Estado vacío invitando a crear el primer límite.
 - [x] Repaso de accesibilidad (ver sección 8).
 - [x] `README.md` con uso, estructura y checklist.
-- [ ] Opcional, no bloquea: `git init` + `.gitignore` + commits por fase.
+- [x] Repositorio git en GitHub (`fdargenis/control-gastos`), con pruebas y capturas versionadas.
 
 **Aceptación:** el presupuesto cuadra con los movimientos del mes actual. ✅
 
@@ -485,3 +485,4 @@ cp backup-v1/index.html backup-v1/style.css backup-v1/script.js .
 | 2026-10-25 | A | Hecho: dashboard de tarjetas, tokens CSS, modo oscuro, modelo v2 con migración, formulario con fecha y categoría, ahorros, lista, toasts, sincronización entre pestañas. 23 pruebas en verde |
 | 2026-10-25 | B | Hecho: balance con el mismo tamaño que las demás cifras (fondo verde intacto), agrupación por día, editar, borrar con deshacer, filtros, búsqueda, iconos por categoría, objetivos táctiles de 40 px y rejilla con columna izquierda. 42 pruebas en verde, sin errores de JS |
 | 2026-10-25 | C | Hecho: gráfica SVG (8 semanas / 6 meses, tres series, escalas con negativos, `<title>` por barra), meta de ahorro con progreso, presupuesto por categoría con semáforo, estados vacíos, `aria-live` en el resumen, contraste AA corregido (`#5F6E85`), fila móvil en dos líneas, `README.md`. 63 pruebas en verde (servidor y `file://`), sin errores de JS |
+| 2026-10-27 | — | Salió a público como **Finova**: la cabecera y el `<title>` adoptan el nombre, README reescrito como presentación (badges HTML5/CSS3/JS, problema que resuelve, hoja de ruta terminada/pendiente, licencia MIT), documentación técnica separada en `docs/TECNICA.md`, archivo `LICENSE`, `.gitignore` ajustado para versionar `pruebas.html`, `pruebas.js` y `capturas/`. Capturas regeneradas con la identidad nueva y 63 pruebas en verde |
