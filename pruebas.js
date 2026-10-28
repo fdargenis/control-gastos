@@ -339,6 +339,140 @@ window.addEventListener("load", function () {
             doc.querySelectorAll("#listaPresupuesto .presupuesto__fila").length === 0 &&
             $("presupuestoVacio").hidden === false);
 
+        // ---------- Copia de seguridad ----------
+        const confirmReal = window.confirm;
+        const movimientosBase = filas();
+        const copiaExportada = window.crearCopia();
+
+        revisar("Exportar crea el sobre con app, versión y estado",
+            copiaExportada.app === "finova" &&
+            copiaExportada.version === 2 &&
+            copiaExportada.estado.version === 2 &&
+            copiaExportada.estado.movimientos.length === movimientosBase &&
+            typeof copiaExportada.exportado === "string",
+            JSON.stringify({
+                app: copiaExportada.app,
+                version: copiaExportada.version,
+                movs: copiaExportada.estado.movimientos.length
+            }));
+
+        revisar("El sobre de la copia solo tiene las claves esperadas",
+            JSON.stringify(Object.keys(copiaExportada).sort()) ===
+                JSON.stringify(["app", "estado", "exportado", "version"]),
+            JSON.stringify(Object.keys(copiaExportada).sort()));
+
+        const leidaSobre = window.leerCopia(JSON.stringify(copiaExportada));
+        revisar("Leer la copia devuelve el estado normalizado",
+            Boolean(leidaSobre) &&
+            leidaSobre.estado.movimientos.length === movimientosBase &&
+            leidaSobre.leidos === movimientosBase,
+            JSON.stringify(leidaSobre && {
+                leidos: leidaSobre.leidos,
+                movs: leidaSobre.estado.movimientos.length
+            }));
+
+        const leidaPelada = window.leerCopia(JSON.stringify({
+            version: 2,
+            movimientos: [{ tipo: "ingreso", monto: 800, descripcion: "Pelado", categoria: "salario" }],
+            metaAhorro: 25000,
+            presupuestos: { comida: 9000 }
+        }));
+        revisar("Leer acepta también un estado v2 pelado",
+            Boolean(leidaPelada) && leidaPelada.estado.metaAhorro === 25000 &&
+            Number(leidaPelada.estado.presupuestos.comida) === 9000,
+            JSON.stringify(leidaPelada && {
+                meta: leidaPelada.estado.metaAhorro,
+                comida: leidaPelada.estado.presupuestos.comida
+            }));
+
+        revisar("Un JSON roto se rechaza", window.leerCopia("{ no es json") === null);
+
+        revisar("Una copia de versión 1 se rechaza",
+            window.leerCopia(JSON.stringify({
+                app: "finova",
+                version: 1,
+                estado: { version: 1, movimientos: [] }
+            })) === null);
+
+        const conSucios = window.leerCopia(JSON.stringify({
+            version: 2,
+            movimientos: [
+                { tipo: "ingreso", monto: 500, descripcion: "Válido" },
+                { tipo: "regalo", monto: 100, descripcion: "Tipo invalido" },
+                { tipo: "gasto", monto: "gratis", descripcion: "Monto invalido" }
+            ]
+        }));
+        revisar("Los registros inválidos de la copia se descartan",
+            Boolean(conSucios) && conSucios.leidos === 3 && conSucios.estado.movimientos.length === 1,
+            JSON.stringify(conSucios && {
+                leidos: conSucios.leidos,
+                validos: conSucios.estado.movimientos.length
+            }));
+
+        // Importación completa: primero dejamos filtros y búsqueda activos
+        doc.querySelector('[data-filtro="gasto"]').click();
+        buscar("nada que ver");
+        const balanceAntes = texto("balance");
+
+        let confirmaciones = 0;
+        window.confirm = function () {
+            confirmaciones += 1;
+            return true;
+        };
+
+        const textoCopia = JSON.stringify({
+            version: 2,
+            movimientos: [
+                { tipo: "ingreso", monto: 2000, descripcion: "Ingreso importado", categoria: "salario" },
+                { tipo: "gasto", monto: 300, descripcion: "Gasto importado", categoria: "comida" },
+                { tipo: "ahorro", monto: 500, descripcion: "Aporte importado" }
+            ],
+            metaAhorro: 1500,
+            presupuestos: { comida: 800, ocio: 500 }
+        });
+
+        window.revisarCopia(textoCopia, "prueba.json");
+
+        const importado = JSON.parse(localStorage.getItem("finance-app-estado") || "{}");
+        revisar("Importar reemplaza los datos y los guarda de inmediato",
+            importado.version === 2 && importado.movimientos.length === 3 &&
+            importado.metaAhorro === 1500 && Number(importado.presupuestos.comida) === 800,
+            JSON.stringify({ movs: importado.movimientos.length, meta: importado.metaAhorro }));
+        revisar("El estado anterior queda respaldado al importar",
+            JSON.parse(localStorage.getItem("finance-app-estado-antes-importar")).movimientos.length === movimientosBase);
+        revisar("Importar limpia filtros y búsqueda",
+            doc.querySelector('[data-filtro="todos"]').classList.contains("chip--activo") &&
+            $("buscar").value === "",
+            "chip=" + doc.querySelector('[data-filtro="todos"]').className);
+        revisar("La lista muestra los datos importados",
+            filas() === 3 && texto("balance").includes("1,200.00"),
+            filas() + " filas / " + texto("balance"));
+
+        const deshacerImport = doc.querySelector(".toast__accion");
+        revisar("El aviso de importación ofrece Deshacer", Boolean(deshacerImport));
+        deshacerImport.click();
+        revisar("Deshacer la importación restaura lo que había",
+            filas() === movimientosBase && texto("balance") === balanceAntes &&
+            JSON.parse(localStorage.getItem("finance-app-estado")).movimientos.length === movimientosBase,
+            filas() + " filas / " + texto("balance"));
+
+        window.revisarCopia('{"version":2,"movimientos":[{"tipo":"fantasma","monto":5}]}', "sucio.json");
+        revisar("Si nada es válido en la copia, no se pide confirmación",
+            confirmaciones === 1, "confirm=" + confirmaciones);
+        revisar("La copia sin movimientos válidos deja el estado intacto",
+            filas() === movimientosBase && Boolean(doc.querySelector(".toast--error")),
+            filas() + " filas");
+        revisar("El rechazo no sobreescribe el respaldo anterior",
+            JSON.parse(localStorage.getItem("finance-app-estado-antes-importar")).movimientos.length === movimientosBase);
+
+        window.confirm = function () {
+            return false;
+        };
+        window.revisarCopia(textoCopia, "cancelada.json");
+        revisar("Cancelar la confirmación no cambia nada", filas() === movimientosBase, String(filas()));
+
+        window.confirm = confirmReal;
+
         // ---------- Accesibilidad ----------
         revisar("El resumen anuncia los cambios a lectores de pantalla",
             ["balance", "ingresos", "gastos", "ahorros"].every(function (id) {

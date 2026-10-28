@@ -1,5 +1,5 @@
 // =====================================================
-//  CONTROL DE GASTOS — Lógica
+//  FINOVA — Lógica
 //
 //  Flujo de cada acción:
 //  1. Leer los datos del formulario
@@ -13,6 +13,7 @@
 const CLAVE_ESTADO = "finance-app-estado";
 const CLAVE_RESPALDO = "finance-app-estado-v1-backup";
 const CLAVE_TEMA = "finance-app-tema";
+const CLAVE_ANTES_IMPORTAR = "finance-app-estado-antes-importar";
 
 const VERSION_ESTADO = 2;
 const SALDO_INICIAL = 0;
@@ -465,6 +466,7 @@ const elBotonTema = document.getElementById("btnTema");
 const elIconoTema = document.getElementById("iconoTema");
 const elBotonReiniciar = document.getElementById("reiniciar");
 const elMenu = document.getElementById("menuOpciones");
+const elArchivoCopia = document.getElementById("archivoCopia");
 
 // ---------- 5. Tema ----------
 const consultaOscuro = window.matchMedia("(prefers-color-scheme: dark)");
@@ -981,6 +983,186 @@ function reiniciarAplicacion() {
 
     actualizar();
     toast("Datos borrados. Empezamos de cero.", "exito");
+}
+
+// ---------- 15. Copia de seguridad ----------
+function descargarArchivo(nombre, contenido, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+
+    window.setTimeout(function () {
+        URL.revokeObjectURL(url);
+    }, 1000);
+}
+
+// Sobre de exportación: metadatos de la copia + el estado completo.
+// El tema no se incluye: es un ajuste del dispositivo, no de los datos.
+function crearCopia() {
+    return {
+        app: "finova",
+        version: VERSION_ESTADO,
+        exportado: new Date().toISOString(),
+        estado: JSON.parse(JSON.stringify(estado))
+    };
+}
+
+function exportarCopia() {
+    elMenu.open = false;
+
+    const nombre = "finova-copia-" + fechaHoyISO() + ".json";
+
+    try {
+        descargarArchivo(nombre, JSON.stringify(crearCopia(), null, 2), "application/json");
+        toast("Copia exportada como " + nombre + ".", "exito");
+    } catch (error) {
+        console.warn("No se pudo exportar la copia:", error);
+        toast("No se pudo generar la copia.", "error");
+    }
+}
+
+function abrirImportador() {
+    elMenu.open = false;
+    elArchivoCopia.value = ""; // permite releer el mismo archivo
+    elArchivoCopia.click();
+}
+
+// Lee el texto del archivo: acepta el sobre completo ({app, version, estado})
+// o un estado v2 pelado. Devuelve {estado, leidos} o null si no sirve.
+function leerCopia(texto) {
+    let datos;
+
+    try {
+        datos = JSON.parse(texto);
+    } catch (error) {
+        return null;
+    }
+
+    if (!datos || typeof datos !== "object" || Array.isArray(datos)) {
+        return null;
+    }
+
+    let cuerpo = datos;
+    if (datos.app === "finova" && datos.estado && typeof datos.estado === "object") {
+        cuerpo = datos.estado;
+    }
+
+    if (cuerpo.version !== VERSION_ESTADO) {
+        return null;
+    }
+
+    return {
+        estado: normalizarEstado(cuerpo),
+        leidos: Array.isArray(cuerpo.movimientos) ? cuerpo.movimientos.length : 0
+    };
+}
+
+// Valida la copia leída, pide confirmación con resumen y reemplaza el estado.
+function revisarCopia(texto, nombre) {
+    const leida = leerCopia(texto);
+
+    if (!leida) {
+        toast("«" + nombre + "» no es una copia de Finova (versión 2). No se cambió nada.", "error");
+        return;
+    }
+
+    const nuevo = leida.estado;
+    const descartados = leida.leidos - nuevo.movimientos.length;
+
+    if (leida.leidos > 0 && nuevo.movimientos.length === 0) {
+        toast("«" + nombre + "» no contiene movimientos válidos. No se cambió nada.", "error");
+        return;
+    }
+
+    const numeroPresupuestos = Object.keys(nuevo.presupuestos).filter(function (categoria) {
+        return Number(nuevo.presupuestos[categoria]) > 0;
+    }).length;
+
+    let resumen = nuevo.movimientos.length === 1
+        ? "1 movimiento"
+        : nuevo.movimientos.length + " movimientos";
+    if (nuevo.metaAhorro > 0) {
+        resumen += ", meta de ahorro";
+    }
+    if (numeroPresupuestos > 0) {
+        resumen += numeroPresupuestos === 1
+            ? " y 1 presupuesto"
+            : " y " + numeroPresupuestos + " presupuestos";
+    }
+
+    let pregunta = "La copia «" + nombre + "» contiene " + resumen + ".";
+    if (descartados > 0) {
+        pregunta += " " + descartados + " registros inválidos se descartarán.";
+    }
+    pregunta += " Se reemplazarán tus datos actuales. ¿Continuar?";
+
+    if (!window.confirm(pregunta)) {
+        return;
+    }
+
+    const anterior = JSON.stringify(estado);
+
+    if (hayAlmacenamiento) {
+        try {
+            window.localStorage.setItem(CLAVE_ANTES_IMPORTAR, anterior);
+        } catch (error) {
+            console.warn("No se pudo guardar el estado previo a importar:", error);
+        }
+    }
+
+    estado = nuevo;
+    cancelarEdicion();
+
+    elMontoAhorro.value = "";
+    elMontoRetiro.value = "";
+    elMontoMeta.value = "";
+    elLimitePresupuesto.value = "";
+    elBuscar.value = "";
+    textoBusqueda = "";
+    aplicarFiltro("todos");
+    aplicarPeriodo("semana");
+
+    actualizar();
+
+    toast("Copia importada: " + resumen + ".", "exito", {
+        etiqueta: "Deshacer",
+        alPulsar: function () {
+            try {
+                estado = normalizarEstado(JSON.parse(anterior));
+            } catch (error) {
+                estado = estadoInicial();
+            }
+            actualizar();
+            toast("Importación deshecha: tus datos anteriores están de vuelta.", "exito");
+        }
+    });
+}
+
+function importarCopia(evento) {
+    elMenu.open = false;
+
+    const archivo = evento.target.files[0];
+
+    if (archivo) {
+        const lector = new FileReader();
+
+        lector.addEventListener("load", function () {
+            revisarCopia(String(lector.result), archivo.name);
+        });
+        lector.addEventListener("error", function () {
+            toast("No se pudo leer «" + archivo.name + "».", "error");
+        });
+
+        lector.readAsText(archivo, "utf-8");
+    }
+
+    evento.target.value = "";
 }
 
 // ---------- 12. Gráfica ----------
@@ -1523,6 +1705,9 @@ function aplicarFiltro(filtro) {
 
 elBotonTema.addEventListener("click", alternarTema);
 elBotonReiniciar.addEventListener("click", reiniciarAplicacion);
+document.getElementById("exportarCopia").addEventListener("click", exportarCopia);
+document.getElementById("importarCopia").addEventListener("click", abrirImportador);
+elArchivoCopia.addEventListener("change", importarCopia);
 
 elBtnSemana.addEventListener("click", function () { aplicarPeriodo("semana"); });
 elBtnMes.addEventListener("click", function () { aplicarPeriodo("mes"); });

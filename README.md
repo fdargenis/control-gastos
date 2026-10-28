@@ -50,6 +50,8 @@ al cerrar.
   a partir de los movimientos.
 - **Movimientos**: alta con fecha y categoría, agrupados por día ("Hoy", "Ayer",
   fecha), con iconos, edición y borrado con **Deshacer**.
+- **Copia de seguridad**: exporta todo a un archivo JSON y lo importa de nuevo,
+  con confirmación y **Deshacer**.
 - **Filtros y búsqueda**: Todos / Ingresos / Gastos / Ahorros, y buscador que
   ignora mayúsculas y acentos.
 - **Ahorros**: aportar y retirar; cada operación queda en el historial.
@@ -74,6 +76,9 @@ al cerrar.
 6. **Presupuesto**: elige categoría y límite; la papelera de cada fila lo
    elimina.
 7. **Tema**: el botón de luna/sol alterna claro y oscuro y recuerda la elección.
+8. **Copia de seguridad**: en el menú `⋯` de la cabecera, **Exportar copia**
+   descarga `finova-copia-<fecha>.json`; **Importar copia…** muestra un resumen
+   y pide confirmación antes de reemplazar, y el aviso ofrece **Deshacer**.
 
 ## Tecnologías
 
@@ -93,7 +98,7 @@ index.html            estructura, formularios y sprite de iconos SVG
 style.css             tokens, temas, rejilla y componentes
 script.js             estado, cálculos, render, gráfica y eventos
 pruebas.html          copia de index.html que carga las pruebas
-pruebas.js            63 comprobaciones automáticas en el navegador
+pruebas.js            80 comprobaciones automáticas en el navegador
 docs/TECNICA.md       documentación técnica avanzada
 PLAN.md               memoria del diseño por fases
 capturas/             imágenes usadas en este README
@@ -113,11 +118,13 @@ backup-v1/            copia local de la versión original (no versionada)
 - [x] Meta de ahorro con progreso.
 - [x] Presupuesto mensual por categoría con semáforo.
 - [x] Modo oscuro, responsive y accesibilidad AA revisada.
-- [x] Batería automática de 63 comprobaciones.
+- [x] Batería automática de 80 comprobaciones (creció con cada fase).
 
 **Pendiente (ideas para la v2)**
 
-- [ ] Copia de seguridad: exportar/importar movimientos a JSON.
+- [x] Copia de seguridad: exportar/importar movimientos a JSON — **entregada**
+  (exporta `finova-copia-<fecha>.json`; la importación valida, pide confirmación
+  y permite deshacer).
 - [ ] Saldo inicial configurable.
 - [ ] Exportar los movimientos a CSV (Excel/Sheets).
 - [ ] Movimientos recurrentes (alquiler, sueldo…).

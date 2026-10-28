@@ -7,7 +7,7 @@
 - **Carpeta:** `/home/fdargenis/Documentos/Control de gastos web  app` (ojo: doble espacio)
 - **Copia de la versión original:** `backup-v1/` (HTML, CSS y JS de antes del rediseño)
 - **Fecha de inicio:** 2026-10-25
-- **Estado general:** Versión 1 completada y publicada como **Finova** (repo público en GitHub).
+- **Estado general:** v1 completada y publicada como **Finova** (repo público en GitHub). La v2 avanza: primero la copia de seguridad JSON (entregada).
 
 ---
 
@@ -47,6 +47,7 @@ Cada entrega deja la app **funcionando**, para poder probar antes de seguir.
 | **A** | 1, 2, 3 | Rediseño visual completo, modo oscuro, modelo de datos v2, formulario con fecha y categoría, ahorros, lista simple | **Completa** |
 | **B** | 4, 5 | Agrupar por día, filtros, búsqueda, editar, borrar con deshacer, iconos por categoría | **Completa** |
 | **C** | 6, 7 | Gráfica SVG, meta de ahorro, presupuesto mensual, accesibilidad final, README | **Completa** |
+| **8** | v2 | Copia de seguridad JSON: exportar/importar con validación, confirmación y deshacer | **Completa** |
 
 ---
 
@@ -159,6 +160,7 @@ Cada movimiento se valida: `tipo` dentro de la lista, `monto` finito y > 0,
 header.cabecera
   .marca (logo SVG + h1 + lema)
   #btnTema                    botón de tema (aria-pressed)
+  details.menu > #exportarCopia / #importarCopia / #archivoCopia (input file)
   details.menu > #reiniciar   "Borrar todos los datos"
 
 main#contenido.contenido
@@ -422,11 +424,11 @@ Debe mostrar balance 500, ingresos 1000, gastos 300, ahorros 200 y la copia en
 
 ### Pruebas automáticas en el navegador
 
-`pruebas.html` ejecuta 63 comprobaciones sobre la app real (registro, validaciones,
+`pruebas.html` ejecuta 80 comprobaciones sobre la app real (registro, validaciones,
 ahorros, agrupación por día, edición, borrado con deshacer, filtros, búsqueda,
-iconos, tipografía, gráfica, meta, presupuesto, accesibilidad, persistencia,
-migración y datos corruptos) y muestra el resultado en pantalla. Respalda y
-restaura `localStorage`, así que no borra los datos del usuario.
+iconos, tipografía, gráfica, meta, presupuesto, copias de seguridad, accesibilidad,
+persistencia, migración y datos corruptos) y muestra el resultado en pantalla.
+Respalda y restaura `localStorage`, así que no borra los datos del usuario.
 
 ```bash
 # Regenerar la copia de pruebas cuando cambie index.html
@@ -486,3 +488,4 @@ cp backup-v1/index.html backup-v1/style.css backup-v1/script.js .
 | 2026-10-25 | B | Hecho: balance con el mismo tamaño que las demás cifras (fondo verde intacto), agrupación por día, editar, borrar con deshacer, filtros, búsqueda, iconos por categoría, objetivos táctiles de 40 px y rejilla con columna izquierda. 42 pruebas en verde, sin errores de JS |
 | 2026-10-25 | C | Hecho: gráfica SVG (8 semanas / 6 meses, tres series, escalas con negativos, `<title>` por barra), meta de ahorro con progreso, presupuesto por categoría con semáforo, estados vacíos, `aria-live` en el resumen, contraste AA corregido (`#5F6E85`), fila móvil en dos líneas, `README.md`. 63 pruebas en verde (servidor y `file://`), sin errores de JS |
 | 2026-10-27 | — | Salió a público como **Finova**: la cabecera y el `<title>` adoptan el nombre, README reescrito como presentación (badges HTML5/CSS3/JS, problema que resuelve, hoja de ruta terminada/pendiente, licencia MIT), documentación técnica separada en `docs/TECNICA.md`, archivo `LICENSE`, `.gitignore` ajustado para versionar `pruebas.html`, `pruebas.js` y `capturas/`. Capturas regeneradas con la identidad nueva y 63 pruebas en verde |
+| 2026-10-28 | 8 | Primera función de la v2: **copia de seguridad JSON**. Menú `⋯` con *Exportar copia* (`finova-copia-<fecha>.json`, sobre `{app, version, exportado, estado}`) e *Importar copia…* (FileReader, acepta sobre o estado v2 pelado, descarta registros inválidos, rechaza JSON roto o `version ≠ 2` sin tocar nada, confirmación con resumen, respaldo previo en `finance-app-estado-antes-importar`, **Deshacer** de 7 s). Estilos `.menu__accion` y `.menu__separador`. 17 comprobaciones nuevas: 80 en verde en servidor y `file://` |

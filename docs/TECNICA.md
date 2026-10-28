@@ -33,6 +33,7 @@ Otras claves:
 |---|---|
 | `finance-app-tema` | `auto` \| `claro` \| `oscuro` |
 | `finance-app-estado-v1-backup` | copia sin alterar del formato viejo (solo si hubo migración) |
+| `finance-app-estado-antes-importar` | estado serializado justo antes de una importación; alimenta el **Deshacer** |
 
 Los totales nunca se guardan: **todo se deriva de los movimientos**.
 
@@ -116,13 +117,48 @@ Finova, pega esa copia en `finance-app-estado` y recarga.
 - Semáforo: verde <70 %, ámbar 70-99 %, rojo ≥100 %; entradas ordenadas por
   porcentaje descendente.
 
+### Copia de seguridad (exportar / importar)
+
+**Sobre de exportación** (`finova-copia-<fecha-local>.json`, generado en el
+menú `⋯` → *Exportar copia*; descarga con `Blob`, sin servidor):
+
+```json
+{
+  "app": "finova",
+  "version": 2,
+  "exportado": "2026-10-28T14:30:00.000Z",
+  "estado": { "version": 2, "movimientos": [...], "metaAhorro": 25000, "presupuestos": {} }
+}
+```
+
+El tema no viaja en la copia: es un ajuste del dispositivo, no de los datos.
+
+**Importación** (menú `⋯` → *Importar copia…*, selector `accept=".json"`):
+
+1. Acepta el sobre completo o un estado v2 «pelado»; ignora metadatos exteriores.
+2. Valida con `normalizarEstado`: los movimientos inválidos se descartan y el
+   resumen lo anuncia. Si el archivo tiene registros pero **ninguno** es válido,
+   se rechaza sin tocar nada.
+3. Un JSON roto o una `version` distinta de 2 se rechazan con un aviso de error:
+   la app no cambia nada.
+4. Antes de reemplazar, `window.confirm` muestra el resumen (movimientos, meta,
+   presupuestos) y advierte que se reemplazan los datos actuales.
+5. Al confirmar: el estado anterior se guarda serializado en
+   `finance-app-estado-antes-importar`, se limpian filtros, búsqueda, formularios
+   y periodo de la gráfica, y se guarda y repinta de inmediato.
+6. El aviso flotante ofrece **Deshacer** (7 s), que restaura el estado previo.
+7. La lectura del archivo se hace con `FileReader` y se limpia el `input`
+   (`value = ""`) para poder reimportar el mismo archivo dos veces.
+
 ## Pruebas
 
 `pruebas.html` (copia de `index.html` que carga `pruebas.js`) ejecuta
-**63 comprobaciones** sobre la app real —registro, validaciones, ahorros,
+**80 comprobaciones** sobre la app real —registro, validaciones, ahorros,
 edición, borrado con deshacer, filtros, búsqueda, iconos, tipografía, gráfica,
-meta, presupuesto, accesibilidad, persistencia, migración y datos corruptos—
-y muestra cada línea con `OK` o `FALLO`.
+meta, presupuesto, copias de seguridad (exportar, importar válido, JSON roto,
+versión incorrecta, registros inválidos, deshacer y cancelación),
+accesibilidad, persistencia, migración y datos corruptos— y muestra cada línea
+con `OK` o `FALLO`.
 
 La batería respalda y restaura `localStorage`, así que no toca tus datos, y
 funciona con doble clic y con servidor local.
@@ -138,7 +174,7 @@ firefox --headless -profile /tmp/ffperfil --window-size=1280,1750 \
   --screenshot=/tmp/pruebas.png "http://localhost:8000/pruebas.html"
 ```
 
-La captura debe mostrar 63 líneas, todas con `OK`.
+La captura debe mostrar 80 líneas, todas con `OK`.
 
 ## Accesibilidad
 
