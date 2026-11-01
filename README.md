@@ -48,6 +48,8 @@ navegadores bloquean el almacenamiento al abrir el archivo directamente
 
 - **Resumen**: balance disponible, ingresos, gastos y ahorros, siempre calculados
   a partir de los movimientos.
+- **Saldo inicial**: indica el dinero que ya tenías antes de empezar; se suma al
+  balance y viaja en la copia de seguridad.
 - **Movimientos**: alta con fecha y categoría, agrupados por día ("Hoy", "Ayer",
   fecha), con iconos, edición y borrado con **Deshacer**.
 - **Copia de seguridad**: exporta todo a un archivo JSON y lo importa de nuevo,
@@ -65,7 +67,8 @@ navegadores bloquean el almacenamiento al abrir el archivo directamente
 ## Uso rápido
 
 1. Elige **Gasto** o **Ingreso**, escribe la descripción, el monto y la
-   categoría. La fecha viene con hoy; puedes cambiarla.
+   categoría. La fecha viene con hoy; puedes cambiarla. Si ya tenías dinero,
+   guárdalo antes en **Saldo inicial**.
 2. Pulsa **Registrar movimiento**. Para corregir algo, usa el lápiz de la fila;
    para eliminarlo, la papelera (el aviso permite **Deshacer**).
 3. **Ahorros**: escribe un monto y pulsa **Aportar** o **Retirar**. No se puede
@@ -98,7 +101,7 @@ index.html            estructura, formularios y sprite de iconos SVG
 style.css             tokens, temas, rejilla y componentes
 script.js             estado, cálculos, render, gráfica y eventos
 pruebas.html          copia de index.html que carga las pruebas
-pruebas.js            80 comprobaciones automáticas en el navegador
+pruebas.js            90 comprobaciones automáticas en el navegador
 docs/TECNICA.md       documentación técnica avanzada
 PLAN.md               memoria del diseño por fases
 capturas/             imágenes usadas en este README
@@ -118,14 +121,15 @@ backup-v1/            copia local de la versión original (no versionada)
 - [x] Meta de ahorro con progreso.
 - [x] Presupuesto mensual por categoría con semáforo.
 - [x] Modo oscuro, responsive y accesibilidad AA revisada.
-- [x] Batería automática de 80 comprobaciones (creció con cada fase).
+- [x] Batería automática de 90 comprobaciones (creció con cada fase).
 
 **Pendiente (ideas para la v2)**
 
 - [x] Copia de seguridad: exportar/importar movimientos a JSON — **entregada**
   (exporta `finova-copia-<fecha>.json`; la importación valida, pide confirmación
   y permite deshacer).
-- [ ] Saldo inicial configurable.
+- [x] Saldo inicial configurable — **entregado** (se suma al balance y viaja en
+  la copia JSON).
 - [ ] Exportar los movimientos a CSV (Excel/Sheets).
 - [ ] Movimientos recurrentes (alquiler, sueldo…).
 - [ ] Instalable en móvil (PWA) y demo persistente en GitHub Pages.

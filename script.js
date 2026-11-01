@@ -219,9 +219,20 @@ function estadoInicial() {
     return {
         version: VERSION_ESTADO,
         movimientos: [],
+        saldoInicial: SALDO_INICIAL,
         metaAhorro: 0,
         presupuestos: {}
     };
+}
+
+function normalizarSaldoInicial(valor) {
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero) || numero <= 0) {
+        return 0;
+    }
+
+    return redondear(Math.min(numero, MAXIMO_MONTO));
 }
 
 function normalizarMovimiento(datos) {
@@ -266,6 +277,7 @@ function normalizarEstado(datos) {
     return {
         version: VERSION_ESTADO,
         movimientos: movimientos,
+        saldoInicial: normalizarSaldoInicial(datos.saldoInicial),
         metaAhorro: Math.max(0, Number(datos.metaAhorro) || 0),
         presupuestos: datos.presupuestos && typeof datos.presupuestos === "object"
             ? datos.presupuestos
@@ -320,6 +332,7 @@ function migrarDesdeV1(datos) {
     return {
         version: VERSION_ESTADO,
         movimientos: movimientos,
+        saldoInicial: 0,
         metaAhorro: 0,
         presupuestos: {}
     };
@@ -378,10 +391,11 @@ function guardarEstado() {
     }
 }
 
-function calcularTotales(movimientos) {
+function calcularTotales(movimientos, saldoInicial) {
     let ingresos = 0;
     let gastos = 0;
     let ahorros = 0;
+    const inicial = normalizarSaldoInicial(saldoInicial);
 
     for (const movimiento of movimientos) {
         if (movimiento.tipo === "ingreso") {
@@ -399,7 +413,7 @@ function calcularTotales(movimientos) {
         ingresos: redondear(ingresos),
         gastos: redondear(gastos),
         ahorros: redondear(ahorros),
-        balance: redondear(SALDO_INICIAL + ingresos - gastos - ahorros)
+        balance: redondear(inicial + ingresos - gastos - ahorros)
     };
 }
 
@@ -411,6 +425,7 @@ let periodoGrafica = "semana";
 
 // ---------- 4. Referencias al DOM ----------
 const elBalance = document.getElementById("balance");
+const elNotaBalance = document.getElementById("notaBalance");
 const elIngresos = document.getElementById("ingresos");
 const elGastos = document.getElementById("gastos");
 const elAhorros = document.getElementById("ahorros");
@@ -429,6 +444,9 @@ const elFormAhorro = document.getElementById("formAhorro");
 const elMontoAhorro = document.getElementById("montoAhorro");
 const elFormRetiro = document.getElementById("formRetiro");
 const elMontoRetiro = document.getElementById("montoRetiro");
+
+const elFormSaldoInicial = document.getElementById("formSaldoInicial");
+const elSaldoInicial = document.getElementById("saldoInicial");
 
 const elLista = document.getElementById("listaMovimientos");
 const elSinMovimientos = document.getElementById("sinMovimientos");
@@ -551,12 +569,16 @@ function toast(texto, tipo, accion) {
 
 // ---------- 7. Pintar la pantalla ----------
 function renderizarTotales() {
-    const totales = calcularTotales(estado.movimientos);
+    const totales = calcularTotales(estado.movimientos, estado.saldoInicial);
 
     elBalance.textContent = formatearMoneda(totales.balance);
     elIngresos.textContent = formatearMoneda(totales.ingresos);
     elGastos.textContent = formatearMoneda(totales.gastos);
     elAhorros.textContent = formatearMoneda(totales.ahorros);
+
+    elNotaBalance.textContent = estado.saldoInicial > 0
+        ? "Incluye " + formatearMoneda(estado.saldoInicial) + " de saldo inicial"
+        : "Lo que puedes gastar ahora mismo";
 }
 
 function crearGrupoDia(fecha) {
@@ -690,6 +712,7 @@ function renderizarPantalla() {
     renderizarLista();
     renderizarGrafica();
     renderizarMeta();
+    renderizarSaldoInicial();
     renderizarPresupuesto();
 }
 
@@ -771,7 +794,7 @@ function registrarMovimiento(evento) {
     const otros = idEnEdicion
         ? estado.movimientos.filter(function (m) { return m.id !== idEnEdicion; })
         : estado.movimientos;
-    const totales = calcularTotales(otros);
+    const totales = calcularTotales(otros, estado.saldoInicial);
 
     if (tipo === "gasto" && monto > totales.balance) {
         return toast("Fondos insuficientes. Te quedan " + formatearMoneda(totales.balance) + ".", "error");
@@ -907,7 +930,7 @@ function aportarAhorros(evento) {
         return toast("Introduce un monto mayor que cero.", "error");
     }
 
-    const totales = calcularTotales(estado.movimientos);
+    const totales = calcularTotales(estado.movimientos, estado.saldoInicial);
 
     if (monto > totales.balance) {
         return toast("No tienes suficiente balance para ese ahorro.", "error");
@@ -937,7 +960,7 @@ function retirarAhorros(evento) {
         return toast("Introduce un monto mayor que cero.", "error");
     }
 
-    const totales = calcularTotales(estado.movimientos);
+    const totales = calcularTotales(estado.movimientos, estado.saldoInicial);
 
     if (monto > totales.ahorros) {
         return toast("No tienes suficientes ahorros para ese retiro.", "error");
@@ -974,6 +997,7 @@ function reiniciarAplicacion() {
     cancelarEdicion();
     elMontoAhorro.value = "";
     elMontoRetiro.value = "";
+    elSaldoInicial.value = "";
     elMontoMeta.value = "";
     elLimitePresupuesto.value = "";
     elBuscar.value = "";
@@ -1087,6 +1111,9 @@ function revisarCopia(texto, nombre) {
     let resumen = nuevo.movimientos.length === 1
         ? "1 movimiento"
         : nuevo.movimientos.length + " movimientos";
+    if (nuevo.saldoInicial > 0) {
+        resumen += ", saldo inicial";
+    }
     if (nuevo.metaAhorro > 0) {
         resumen += ", meta de ahorro";
     }
@@ -1121,6 +1148,7 @@ function revisarCopia(texto, nombre) {
 
     elMontoAhorro.value = "";
     elMontoRetiro.value = "";
+    elSaldoInicial.value = nuevo.saldoInicial > 0 ? String(nuevo.saldoInicial) : "";
     elMontoMeta.value = "";
     elLimitePresupuesto.value = "";
     elBuscar.value = "";
@@ -1138,6 +1166,7 @@ function revisarCopia(texto, nombre) {
             } catch (error) {
                 estado = estadoInicial();
             }
+            elSaldoInicial.value = estado.saldoInicial > 0 ? String(estado.saldoInicial) : "";
             actualizar();
             toast("Importación deshecha: tus datos anteriores están de vuelta.", "exito");
         }
@@ -1445,7 +1474,7 @@ function aplicarPeriodo(periodo) {
 // ---------- 13. Meta de ahorro ----------
 function renderizarMeta() {
     const meta = redondear(Number(estado.metaAhorro) || 0);
-    const ahorros = calcularTotales(estado.movimientos).ahorros;
+    const ahorros = calcularTotales(estado.movimientos, estado.saldoInicial).ahorros;
 
     if (document.activeElement !== elMontoMeta) {
         elMontoMeta.value = meta > 0 ? String(meta) : "";
@@ -1495,6 +1524,40 @@ function guardarMeta(evento) {
     estado.metaAhorro = redondear(meta);
     actualizar();
     toast("Meta de ahorro guardada.", "exito");
+}
+
+// ---------- 13b. Saldo inicial ----------
+function renderizarSaldoInicial() {
+    if (document.activeElement !== elSaldoInicial) {
+        elSaldoInicial.value = estado.saldoInicial > 0 ? String(estado.saldoInicial) : "";
+    }
+}
+
+function guardarSaldoInicial(evento) {
+    evento.preventDefault();
+
+    const texto = elSaldoInicial.value.trim();
+
+    if (texto === "") {
+        estado.saldoInicial = 0;
+        elSaldoInicial.value = "";
+        actualizar();
+        toast("Saldo inicial eliminado.", "info");
+        return;
+    }
+
+    const saldo = Number(texto);
+
+    if (!Number.isFinite(saldo) || saldo < 0 || saldo > MAXIMO_MONTO) {
+        elSaldoInicial.focus();
+        toast("Escribe un saldo inicial válido.", "error");
+        return;
+    }
+
+    estado.saldoInicial = redondear(saldo);
+    elSaldoInicial.value = String(estado.saldoInicial);
+    actualizar();
+    toast("Saldo inicial guardado.", "exito");
 }
 
 // ---------- 14. Presupuesto mensual ----------
@@ -1713,6 +1776,7 @@ elBtnSemana.addEventListener("click", function () { aplicarPeriodo("semana"); })
 elBtnMes.addEventListener("click", function () { aplicarPeriodo("mes"); });
 
 elFormMeta.addEventListener("submit", guardarMeta);
+elFormSaldoInicial.addEventListener("submit", guardarSaldoInicial);
 elFormPresupuesto.addEventListener("submit", guardarPresupuesto);
 
 consultaOscuro.addEventListener("change", function () {

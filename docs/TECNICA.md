@@ -22,6 +22,7 @@ Clave en `localStorage`: `finance-app-estado`
       categoria: "comida"         // null en ahorro y retiro
     }
   ],
+  saldoInicial: 0,                // dinero que ya existía; se suma al balance
   metaAhorro: 0,                  // meta de la tarjeta "Meta de ahorro"
   presupuestos: {}                // { comida: 8000, ... } límites mensuales
 }
@@ -41,8 +42,11 @@ Los totales nunca se guardan: **todo se deriva de los movimientos**.
 ingresos = Σ montos de tipo "ingreso"
 gastos   = Σ montos de tipo "gasto"
 ahorros  = Σ "ahorro" − Σ "retiro"
-balance  = ingresos − gastos − ahorros   (saldo inicial: 0)
+balance  = saldoInicial + ingresos − gastos − ahorros
 ```
+
+`saldoInicial` es configurable desde su tarjeta: 0 por defecto, nunca negativo
+y como máximo `999999999.99`. Se guarda en el estado y viaja en la copia JSON.
 
 Así es imposible que las tarjetas se desincronicen, y cada traspaso a ahorros
 queda en el historial.
@@ -62,7 +66,8 @@ queda en el historial.
 
 Cada movimiento se valida: tipo en la lista, monto finito y positivo, fecha con
 formato válido, descripción de texto recortada a 60 caracteres, categoría
-conocida (o `otros`). Los registros inválidos se descartan.
+conocida (o `otros`). Los registros inválidos se descartan. El `saldoInicial` se
+normaliza a 0 si falta o no es un número positivo.
 
 ### Volver a la versión anterior
 
@@ -153,12 +158,12 @@ El tema no viaja en la copia: es un ajuste del dispositivo, no de los datos.
 ## Pruebas
 
 `pruebas.html` (copia de `index.html` que carga `pruebas.js`) ejecuta
-**80 comprobaciones** sobre la app real —registro, validaciones, ahorros,
-edición, borrado con deshacer, filtros, búsqueda, iconos, tipografía, gráfica,
-meta, presupuesto, copias de seguridad (exportar, importar válido, JSON roto,
-versión incorrecta, registros inválidos, deshacer y cancelación),
-accesibilidad, persistencia, migración y datos corruptos— y muestra cada línea
-con `OK` o `FALLO`.
+**90 comprobaciones** sobre la app real —registro, validaciones, ahorros,
+saldo inicial, edición, borrado con deshacer, filtros, búsqueda, iconos,
+tipografía, gráfica, meta, presupuesto, copias de seguridad (exportar, importar
+válido, JSON roto, versión incorrecta, registros inválidos, deshacer y
+cancelación), accesibilidad, persistencia, migración y datos corruptos— y
+muestra cada línea con `OK` o `FALLO`.
 
 La batería respalda y restaura `localStorage`, así que no toca tus datos, y
 funciona con doble clic y con servidor local.
@@ -174,7 +179,7 @@ firefox --headless -profile /tmp/ffperfil --window-size=1280,1750 \
   --screenshot=/tmp/pruebas.png "http://localhost:8000/pruebas.html"
 ```
 
-La captura debe mostrar 80 líneas, todas con `OK`.
+La captura debe mostrar 90 líneas, todas con `OK`.
 
 ## Accesibilidad
 

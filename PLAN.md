@@ -7,7 +7,7 @@
 - **Carpeta:** `/home/fdargenis/Documentos/Control de gastos web  app` (ojo: doble espacio)
 - **Copia de la versión original:** `backup-v1/` (HTML, CSS y JS de antes del rediseño)
 - **Fecha de inicio:** 2026-10-25
-- **Estado general:** v1 completada y publicada como **Finova** (repo público en GitHub). La v2 avanza: primero la copia de seguridad JSON (entregada).
+- **Estado general:** v1 completada y publicada como **Finova** (repo público en GitHub). La v2 avanza: copia de seguridad JSON y saldo inicial configurable (entregados).
 
 ---
 
@@ -48,6 +48,7 @@ Cada entrega deja la app **funcionando**, para poder probar antes de seguir.
 | **B** | 4, 5 | Agrupar por día, filtros, búsqueda, editar, borrar con deshacer, iconos por categoría | **Completa** |
 | **C** | 6, 7 | Gráfica SVG, meta de ahorro, presupuesto mensual, accesibilidad final, README | **Completa** |
 | **8** | v2 | Copia de seguridad JSON: exportar/importar con validación, confirmación y deshacer | **Completa** |
+| **9** | v2 | Saldo inicial configurable: campo propio, suma al balance y viaja en la copia JSON | **Completa** |
 
 ---
 
@@ -69,6 +70,7 @@ Clave en `localStorage`: `finance-app-estado`
       categoria: "comida"         // solo gastos e ingresos; null en ahorro/retiro
     }
   ],
+  saldoInicial: 0,                // dinero que ya existía; se suma al balance
   metaAhorro: 0,                  // meta de la tarjeta "Meta de ahorro"
   presupuestos: {}                // { comida: 8000, ... } límites mensuales
 }
@@ -83,11 +85,12 @@ Copia del formato viejo: `finance-app-estado-v1-backup`
 ingresos = Σ monto de tipo ingreso
 gastos   = Σ monto de tipo gasto
 ahorros  = Σ monto de tipo ahorro − Σ monto de tipo retiro
-balance  = SALDO_INICIAL + ingresos − gastos − ahorros
+balance  = saldoInicial + ingresos − gastos − ahorros
 ```
 
-`SALDO_INICIAL = 0` (constante). Con esto es imposible que las tarjetas se
-desincronicen, y los traspasos a ahorros quedan en el historial.
+`saldoInicial` es configurable (0 por defecto, nunca negativo). Con esto es
+imposible que las tarjetas se desincronicen, y los traspasos a ahorros quedan
+en el historial.
 
 ### Migración desde v1
 
@@ -424,7 +427,7 @@ Debe mostrar balance 500, ingresos 1000, gastos 300, ahorros 200 y la copia en
 
 ### Pruebas automáticas en el navegador
 
-`pruebas.html` ejecuta 80 comprobaciones sobre la app real (registro, validaciones,
+`pruebas.html` ejecuta 90 comprobaciones sobre la app real (registro, validaciones,
 ahorros, agrupación por día, edición, borrado con deshacer, filtros, búsqueda,
 iconos, tipografía, gráfica, meta, presupuesto, copias de seguridad, accesibilidad,
 persistencia, migración y datos corruptos) y muestra el resultado en pantalla.
@@ -489,3 +492,4 @@ cp backup-v1/index.html backup-v1/style.css backup-v1/script.js .
 | 2026-10-25 | C | Hecho: gráfica SVG (8 semanas / 6 meses, tres series, escalas con negativos, `<title>` por barra), meta de ahorro con progreso, presupuesto por categoría con semáforo, estados vacíos, `aria-live` en el resumen, contraste AA corregido (`#5F6E85`), fila móvil en dos líneas, `README.md`. 63 pruebas en verde (servidor y `file://`), sin errores de JS |
 | 2026-10-27 | — | Salió a público como **Finova**: la cabecera y el `<title>` adoptan el nombre, README reescrito como presentación (badges HTML5/CSS3/JS, problema que resuelve, hoja de ruta terminada/pendiente, licencia MIT), documentación técnica separada en `docs/TECNICA.md`, archivo `LICENSE`, `.gitignore` ajustado para versionar `pruebas.html`, `pruebas.js` y `capturas/`. Capturas regeneradas con la identidad nueva y 63 pruebas en verde |
 | 2026-10-28 | 8 | Primera función de la v2: **copia de seguridad JSON**. Menú `⋯` con *Exportar copia* (`finova-copia-<fecha>.json`, sobre `{app, version, exportado, estado}`) e *Importar copia…* (FileReader, acepta sobre o estado v2 pelado, descarta registros inválidos, rechaza JSON roto o `version ≠ 2` sin tocar nada, confirmación con resumen, respaldo previo en `finance-app-estado-antes-importar`, **Deshacer** de 7 s). Estilos `.menu__accion` y `.menu__separador`. 17 comprobaciones nuevas: 80 en verde en servidor y `file://` |
+| 2026-10-31 | 9 | Segunda función de la v2: **saldo inicial configurable**. Campo `saldoInicial` en el estado (0 por defecto, migración y normalización), tarjeta propia con formulario, suma al balance y a la nota de la tarjeta, se valida contra gastos y ahorros, viaja en la copia JSON (exportar, importar y deshacer). 10 comprobaciones nuevas: 90 en verde en servidor |

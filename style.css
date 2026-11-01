@@ -388,7 +388,8 @@ button {
     align-self: start;
 }
 
-.ahorros {
+.ahorros,
+.saldo-inicial {
     align-self: start;
     display: grid;
     gap: var(--e3);

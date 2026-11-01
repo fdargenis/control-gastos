@@ -72,7 +72,7 @@
             <article class="tarjeta tarjeta--balance">
                 <h3 class="tarjeta__titulo">Balance disponible</h3>
                 <p class="cifra" id="balance" aria-live="polite">RD$ 0.00</p>
-                <p class="tarjeta__nota">Lo que puedes gastar ahora mismo</p>
+                <p class="tarjeta__nota" id="notaBalance">Lo que puedes gastar ahora mismo</p>
             </article>
 
             <article class="tarjeta tarjeta--metrica">
@@ -170,6 +170,24 @@
                                inputmode="decimal" placeholder="0.00">
                     </div>
                     <button type="submit" class="boton boton--fantasma">Retirar</button>
+                </form>
+            </section>
+
+            <!-- ===== SALDO INICIAL ===== -->
+            <section class="tarjeta saldo-inicial" aria-labelledby="tituloSaldoInicial">
+                <h2 class="tarjeta__titulo" id="tituloSaldoInicial">Saldo inicial</h2>
+                <p class="tarjeta__nota" id="notaSaldoInicial">
+                    El dinero que ya tenías antes de registrar movimientos. Se suma al balance.
+                </p>
+
+                <form id="formSaldoInicial" class="campo-fila" novalidate>
+                    <div class="campo">
+                        <label for="saldoInicial">Saldo inicial (RD$)</label>
+                        <input type="number" id="saldoInicial" min="0" max="999999999.99" step="0.01"
+                               inputmode="decimal" placeholder="0.00"
+                               aria-describedby="notaSaldoInicial">
+                    </div>
+                    <button type="submit" class="boton">Guardar</button>
                 </form>
             </section>
 

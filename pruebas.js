@@ -86,6 +86,40 @@ window.addEventListener("load", function () {
             getComputedStyle($("limpiarFiltros")).display);
         revisar("Al arrancar se ve el aviso de lista vacía", !$("sinMovimientos").hidden);
 
+        // ---------- Saldo inicial ----------
+        revisar("El saldo inicial arranca vacío y en cero",
+            $("saldoInicial").value === "" && texto("balance").includes("0.00"),
+            "campo=" + $("saldoInicial").value + " / " + texto("balance"));
+
+        $("saldoInicial").value = "500";
+        enviar($("formSaldoInicial"));
+        revisar("El saldo inicial se suma al balance",
+            texto("balance").includes("500.00") &&
+            JSON.parse(localStorage.getItem("finance-app-estado")).saldoInicial === 500,
+            texto("balance"));
+
+        revisar("El balance avisa de que incluye el saldo inicial",
+            $("notaBalance").textContent.indexOf("500.00") !== -1,
+            $("notaBalance").textContent);
+
+        registrar("gasto", "Compra con saldo inicial", "600", "compras", null);
+        revisar("El saldo inicial cuenta para validar los gastos",
+            filas() === 0, String(filas()));
+
+        $("saldoInicial").value = "-100";
+        enviar($("formSaldoInicial"));
+        revisar("Un saldo inicial negativo se rechaza",
+            texto("balance").includes("500.00") &&
+            JSON.parse(localStorage.getItem("finance-app-estado")).saldoInicial === 500,
+            texto("balance"));
+
+        $("saldoInicial").value = "";
+        enviar($("formSaldoInicial"));
+        revisar("Dejar el saldo inicial vacío lo pone a cero",
+            texto("balance").includes("0.00") &&
+            JSON.parse(localStorage.getItem("finance-app-estado")).saldoInicial === 0,
+            texto("balance"));
+
         // ---------- Base ----------
         registrar("ingreso", "Sueldo", "1000", null, null);
         revisar("Ingreso de 1000 suma al balance", texto("balance").includes("1,000.00"), texto("balance"));
@@ -241,7 +275,8 @@ window.addEventListener("load", function () {
         });
         const t = window.calcularTotales(migrado.movimientos);
         revisar("Migración v1 conserva los totales",
-            t.balance === 500 && t.ingresos === 1000 && t.gastos === 300 && t.ahorros === 200,
+            t.balance === 500 && t.ingresos === 1000 && t.gastos === 300 && t.ahorros === 200 &&
+            migrado.saldoInicial === 0,
             JSON.stringify(t));
 
         // ---------- Datos corruptos ----------
@@ -249,6 +284,10 @@ window.addEventListener("load", function () {
             window.normalizarMovimiento({ tipo: "gasto", monto: "abc" }) === null);
         revisar("Movimiento con tipo inválido se descarta",
             window.normalizarMovimiento({ tipo: "regalo", monto: 10 }) === null);
+        revisar("Un saldo inicial inválido se normaliza a cero",
+            window.normalizarEstado({ version: 2, saldoInicial: -5 }).saldoInicial === 0 &&
+            window.normalizarEstado({ version: 2, saldoInicial: "abc" }).saldoInicial === 0 &&
+            window.normalizarEstado({ version: 2 }).saldoInicial === 0);
 
         // ---------- Gráfica ----------
         const barrasSemanales = doc.querySelectorAll("#grafica rect.barra").length;
@@ -342,7 +381,13 @@ window.addEventListener("load", function () {
         // ---------- Copia de seguridad ----------
         const confirmReal = window.confirm;
         const movimientosBase = filas();
+        $("saldoInicial").value = "250";
+        enviar($("formSaldoInicial"));
         const copiaExportada = window.crearCopia();
+
+        revisar("La copia incluye el saldo inicial",
+            copiaExportada.estado.saldoInicial === 250,
+            String(copiaExportada.estado.saldoInicial));
 
         revisar("Exportar crea el sobre con app, versión y estado",
             copiaExportada.app === "finova" &&
@@ -375,14 +420,17 @@ window.addEventListener("load", function () {
             version: 2,
             movimientos: [{ tipo: "ingreso", monto: 800, descripcion: "Pelado", categoria: "salario" }],
             metaAhorro: 25000,
-            presupuestos: { comida: 9000 }
+            presupuestos: { comida: 9000 },
+            saldoInicial: 750
         }));
         revisar("Leer acepta también un estado v2 pelado",
             Boolean(leidaPelada) && leidaPelada.estado.metaAhorro === 25000 &&
-            Number(leidaPelada.estado.presupuestos.comida) === 9000,
+            Number(leidaPelada.estado.presupuestos.comida) === 9000 &&
+            leidaPelada.estado.saldoInicial === 750,
             JSON.stringify(leidaPelada && {
                 meta: leidaPelada.estado.metaAhorro,
-                comida: leidaPelada.estado.presupuestos.comida
+                comida: leidaPelada.estado.presupuestos.comida,
+                saldo: leidaPelada.estado.saldoInicial
             }));
 
         revisar("Un JSON roto se rechaza", window.leerCopia("{ no es json") === null);
@@ -427,6 +475,7 @@ window.addEventListener("load", function () {
                 { tipo: "gasto", monto: 300, descripcion: "Gasto importado", categoria: "comida" },
                 { tipo: "ahorro", monto: 500, descripcion: "Aporte importado" }
             ],
+            saldoInicial: 300,
             metaAhorro: 1500,
             presupuestos: { comida: 800, ocio: 500 }
         });
@@ -438,6 +487,9 @@ window.addEventListener("load", function () {
             importado.version === 2 && importado.movimientos.length === 3 &&
             importado.metaAhorro === 1500 && Number(importado.presupuestos.comida) === 800,
             JSON.stringify({ movs: importado.movimientos.length, meta: importado.metaAhorro }));
+        revisar("Importar recupera el saldo inicial de la copia",
+            importado.saldoInicial === 300 && $("saldoInicial").value === "300",
+            "saldo=" + importado.saldoInicial + " campo=" + $("saldoInicial").value);
         revisar("El estado anterior queda respaldado al importar",
             JSON.parse(localStorage.getItem("finance-app-estado-antes-importar")).movimientos.length === movimientosBase);
         revisar("Importar limpia filtros y búsqueda",
@@ -445,7 +497,7 @@ window.addEventListener("load", function () {
             $("buscar").value === "",
             "chip=" + doc.querySelector('[data-filtro="todos"]').className);
         revisar("La lista muestra los datos importados",
-            filas() === 3 && texto("balance").includes("1,200.00"),
+            filas() === 3 && texto("balance").includes("1,500.00"),
             filas() + " filas / " + texto("balance"));
 
         const deshacerImport = doc.querySelector(".toast__accion");
@@ -455,6 +507,10 @@ window.addEventListener("load", function () {
             filas() === movimientosBase && texto("balance") === balanceAntes &&
             JSON.parse(localStorage.getItem("finance-app-estado")).movimientos.length === movimientosBase,
             filas() + " filas / " + texto("balance"));
+        revisar("Deshacer la importación restaura el saldo inicial",
+            JSON.parse(localStorage.getItem("finance-app-estado")).saldoInicial === 250 &&
+            $("saldoInicial").value === "250",
+            "saldo=" + JSON.parse(localStorage.getItem("finance-app-estado")).saldoInicial);
 
         window.revisarCopia('{"version":2,"movimientos":[{"tipo":"fantasma","monto":5}]}', "sucio.json");
         revisar("Si nada es válido en la copia, no se pide confirmación",
