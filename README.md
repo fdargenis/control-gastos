@@ -36,13 +36,13 @@ Para probarla sin instalar nada más, clona el repositorio y abre `index.html`
 ```bash
 git clone https://github.com/fdargenis/control-gastos.git
 cd control-gastos
-python3 -m http.server 8000
 ```
 
-Y entra en <http://localhost:8000>. El servidor local solo está de apoyo:
-también puedes abrir `index.html` con doble clic. En ese caso algunos
-navegadores bloquean el almacenamiento y avisarán; los datos no se conservarán
-al cerrar.
+Abre `index.html` con doble clic o sírvelo con la extensión **Live Server** de
+VS Code (o con cualquier servidor estático, como `npx serve`). Para que los
+datos se conserven entre visitas conviene usar un servidor local: algunos
+navegadores bloquean el almacenamiento al abrir el archivo directamente
+(`file://`) y avisarán.
 
 ## Qué hace
 

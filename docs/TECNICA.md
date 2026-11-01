@@ -192,6 +192,6 @@ La captura debe mostrar 80 líneas, todas con `OK`.
 ## Sin dependencias
 
 No hay librerías, empaquetado ni servicios. La gráfica y los iconos son SVG
-generados en `script.js` e `index.html`. Solo hace falta un navegador moderno
-y, opcionalmente, `python3` para el servidor local (cualquier `http.server`
-sirve).
+generados en `script.js` e `index.html`. Solo hace falta un navegador moderno;
+para servirlo en local basta con la extensión **Live Server** de VS Code o
+cualquier servidor estático (por ejemplo, `npx serve`).
